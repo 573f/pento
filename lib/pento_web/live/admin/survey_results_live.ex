@@ -9,6 +9,7 @@ defmodule PentoWeb.Admin.SurveyResultsLive do
      socket
      |> assign(assigns)
      |> assign_age_group_filter()
+     |> assign_gender_filter()
      |> assign_products_with_average_ratings()
      |> assign_dataset()
      |> assign_chart()
@@ -29,6 +30,23 @@ defmodule PentoWeb.Admin.SurveyResultsLive do
      |> assign_chart_svg()}
   end
 
+  def handle_event("gender_filter", %{"gender_filter" => gender_filter}, socket) do
+    {:noreply,
+     socket
+     |> assign_gender_filter(gender_filter)
+     |> assign_products_with_average_ratings()
+     |> assign_dataset()
+     |> assign_chart()
+     |> assign_chart_svg()}
+  end
+
+  def assign_age_group_filter(
+        %{assigns: %{age_group_filter: age_group_filter}} =
+          socket
+      ) do
+    assign(socket, :age_group_filter, age_group_filter)
+  end
+
   def assign_age_group_filter(socket) do
     assign(socket, :age_group_filter, "all")
   end
@@ -37,25 +55,41 @@ defmodule PentoWeb.Admin.SurveyResultsLive do
     assign(socket, :age_group_filter, age_group_filter)
   end
 
+  def assign_gender_filter(%{assigns: %{gender_filter: gender_filter}} = socket) do
+    assign(socket, :gender_filter, gender_filter)
+  end
+
+  def assign_gender_filter(socket) do
+    assign(socket, :gender_filter, "all")
+  end
+
+  def assign_gender_filter(socket, gender_filter) do
+    assign(socket, :gender_filter, gender_filter)
+  end
+
   def assign_products_with_average_ratings(
-        %{assigns: %{age_group_filter: age_group_filter}} = socket
+        %{assigns: %{age_group_filter: age_group_filter, gender_filter: gender_filter}} = socket
       ) do
     socket
     |> assign(
       :products_with_average_ratings,
-      Catalog.products_with_average_ratings(%{
-        age_group_filter: age_group_filter
+      get_products_with_average_ratings(%{
+        age_group_filter: age_group_filter,
+        gender_filter: gender_filter
       })
     )
   end
 
-  @spec assign_dataset(%{
-          :assigns => %{
-            :products_with_average_ratings => [list | tuple | map],
-            optional(any) => any
-          },
-          optional(any) => any
-        }) :: map
+  defp get_products_with_average_ratings(filters) do
+    case Catalog.products_with_average_ratings(filters) do
+      [] ->
+        Catalog.products_with_zero_ratings()
+
+      products ->
+        products
+    end
+  end
+
   def assign_dataset(
         %{
           assigns: %{products_with_average_ratings: products_with_average_ratings}

@@ -34,6 +34,11 @@ defmodule Pento.Catalog.Product.Query do
     |> select([p, r], {p.name, fragment("?::float", avg(r.stars))})
   end
 
+  def with_zero_ratings(query \\ base()) do
+    query
+    |> select([p], {p.name, 0})
+  end
+
   def join_users(query \\ base()) do
     query
     |> join(:left, [p, r], u in User, on: r.user_id == u.id)
